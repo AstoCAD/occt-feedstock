@@ -1,0 +1,73 @@
+# AstoCAD: index the occt packages built by "Build AstoCAD occt channel" and publish them
+# as a conda channel on GitHub Pages (https://astocad.github.io/occt-feedstock).
+# Called by that workflow after its builds; can also be run by hand on an earlier run's
+# artifacts (run_id) without rebuilding.
+name: Publish AstoCAD occt channel
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "ID of the build run whose pkg-* artifacts to publish"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download packages of this run
+        if: ${{ !inputs.run_id }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pkg-*
+          path: pkgs
+      - name: Download packages of an earlier run
+        if: ${{ inputs.run_id }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pkg-*
+          path: pkgs
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # conda-index imports conda, so it must run from a conda environment, not pip.
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: index
+          channels: conda-forge
+          conda-remove-defaults: "true"
+      - name: Build the channel
+        shell: bash -el {0}
+        run: |
+          set -e
+          conda install -y conda-index
+          mkdir -p channel/noarch
+          for f in pkgs/*/*.conda; do
+            case "$f" in
+              *linux_64*) sub=linux-64;; *linux_aarch64*) sub=linux-aarch64;;
+              *osx_64*) sub=osx-64;; *osx_arm64*) sub=osx-arm64;; *win_64*) sub=win-64;;
+              *) echo "unknown platform: $f"; exit 1;;
+            esac
+            mkdir -p channel/$sub && cp "$f" channel/$sub/
+          done
+          python -m conda_index channel
+          echo "# AstoCAD occt channel" > channel/index.md
+          find channel -type f | sort
+          for sub in linux-64 linux-aarch64 osx-64 osx-arm64 win-64 noarch; do
+            test -f channel/$sub/repodata.json
+          done
+      - name: Publish to gh-pages
+        shell: bash
+        run: |
+          cd channel
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          touch .nojekyll
+          git add -A
+          git commit -q -m "AstoCAD occt channel from ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

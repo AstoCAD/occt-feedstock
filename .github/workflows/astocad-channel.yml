@@ -124,35 +124,7 @@ jobs:
 
   publish:
     needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: pkgs
-      - name: Build the channel
-        shell: bash
-        run: |
-          set -e
-          mkdir -p channel/noarch
-          for f in pkgs/*/*.conda; do
-            case "$f" in
-              *linux_64*) sub=linux-64;; *linux_aarch64*) sub=linux-aarch64;;
-              *osx_64*) sub=osx-64;; *osx_arm64*) sub=osx-arm64;; *win_64*) sub=win-64;;
-            esac
-            mkdir -p channel/$sub && cp "$f" channel/$sub/
-          done
-          pip install conda-index
-          python -m conda_index channel
-          echo "# AstoCAD occt channel" > channel/index.md
-          find channel -type f | sort
-      - name: Publish to gh-pages
-        shell: bash
-        run: |
-          cd channel
-          git init -q -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          touch .nojekyll
-          git add -A
-          git commit -q -m "AstoCAD occt channel from ${GITHUB_SHA}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+    uses: ./.github/workflows/astocad-publish.yml
+    permissions:
+      contents: write
+      actions: read
