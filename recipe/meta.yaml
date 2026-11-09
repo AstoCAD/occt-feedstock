@@ -1,6 +1,6 @@
 {% set name = "occt" %}
 {% set version = "8.0.1" %}
-{% set build = 1001 %}  # AstoCAD: above conda-forge's build numbers
+{% set build = 1002 %}  # AstoCAD: above conda-forge's build numbers; one more per AstoCAD tag
 
 {% set build = build + 100 %}   # [variant == "novtk"]
 {% set build = build + 200 %}   # [variant == "all"]
@@ -11,10 +11,11 @@ package:
   version: {{ version }}
 
 source:
-  # AstoCAD: realthunder/OCCT LinkVibe-801 (8.0.1) + BRepFeat_Form fix (realthunder/OCCT#5)
-  fn: {{ name }}-{{ version }}-astocad1.tar.gz
-  url: https://github.com/AstoCAD/OCCT/archive/refs/tags/V8_0_1-astocad1.tar.gz
-  sha256: af83a2dbfc28101c3c12a1ae1dae42cd892ab798200dc5c8cf439e84b7960758
+  # AstoCAD: realthunder/OCCT LinkVibe-801 (8.0.1) + BRepFeat_Form fix (realthunder/OCCT#5),
+  # with BRepGProp and BRep_CurveRepresentation back to upstream 8.0.1 and a faster Thickness
+  fn: {{ name }}-{{ version }}-astocad2.tar.gz
+  url: https://github.com/AstoCAD/OCCT/archive/refs/tags/V8_0_1-astocad2.tar.gz
+  sha256: 549ee251bcad7e7870339a3b636fea1e58673ede136d8aba21ef76c8a160fa5b
   patches:
     - patches/switch-vtk-freetype-cmake-order.patch
 

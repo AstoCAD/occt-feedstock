@@ -46,6 +46,15 @@ jobs:
           set -e
           conda install -y conda-index
           mkdir -p channel/noarch
+          # Keep the packages already published: lock files pinned to an earlier build must
+          # still resolve. A rebuilt package with the same file name replaces the old one.
+          if git clone -q --depth 1 -b gh-pages "https://github.com/${GITHUB_REPOSITORY}.git" published; then
+            for sub in linux-64 linux-aarch64 osx-64 osx-arm64 win-64 noarch; do
+              if ls published/$sub/*.conda >/dev/null 2>&1; then
+                mkdir -p channel/$sub && cp published/$sub/*.conda channel/$sub/
+              fi
+            done
+          fi
           for f in pkgs/*/*.conda; do
             case "$f" in
               *linux_64*) sub=linux-64;; *linux_aarch64*) sub=linux-aarch64;;
